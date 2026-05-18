@@ -1,0 +1,21 @@
+{
+  "version": "0.1.0",
+  "name": "streamify",
+  "displayName": "Streamify",
+  "description": "Full-stack video streaming platform",
+  "categories": ["Other"],
+  "keywords": ["streaming", "video", "netflix", "ott", "movies"],
+  "homepage": "https://github.com/yourusername/streamify",
+  "bugs": {
+    "url": "https://github.com/yourusername/streamify/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/streamify.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Your Name",
+    "email": "your@email.com"
+  }
+}
