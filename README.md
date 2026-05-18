@@ -118,6 +118,3 @@ vercel deploy
 ### Backend (Railway/Render)
 Deploy Node.js API separately with PostgreSQL.
 
-## License
-
-MIT
