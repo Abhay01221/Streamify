@@ -1,0 +1,1 @@
+TOKEN=$(curl -s -X POST "http://localhost:2358/submissions?base64_encoded=false&wait=false" -H "Content-Type: application/json" -d "{\"source_code\":\"print(\\\\\"hello\\\\\")\",\"language_id\":71,\"stdin\":\"\"}" | sed -n "s/.*\"token\":\"\([^\"]*\)\".*/\1/p"); echo "Token: $TOKEN"; sleep 5; curl -s "http://localhost:2358/submissions/$TOKEN?base64_encoded=false"

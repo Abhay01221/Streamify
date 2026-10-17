@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 222 47% 7%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 20%;
+    --input: 217 33% 17%;
+    --ring: 160 84% 39%;
+    --radius: 0.5rem;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 160 84% 39%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-coders-border rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
+
+@layer components {
+  /* Difficulty badges */
+  .badge-easy {
+    @apply bg-green-500/10 text-green-400 border border-green-500/20 text-xs font-medium px-2 py-0.5 rounded-full;
+  }
+  .badge-medium {
+    @apply bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 text-xs font-medium px-2 py-0.5 rounded-full;
+  }
+  .badge-hard {
+    @apply bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-medium px-2 py-0.5 rounded-full;
+  }
+
+  /* Glass card */
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl;
+  }
+
+  /* Code font */
+  .font-code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-coders-green to-coders-blue bg-clip-text text-transparent;
+  }
+
+  /* Status colors */
+  .status-accepted { @apply text-green-400; }
+  .status-wrong { @apply text-red-400; }
+  .status-tle { @apply text-yellow-400; }
+  .status-mle { @apply text-orange-400; }
+  .status-error { @apply text-red-500; }
+  .status-pending { @apply text-blue-400; }
+}
+
+/* Monaco editor overrides */
+.monaco-editor .margin {
+  background-color: transparent !important;
+}
+
+/* Heatmap */
+.heatmap-cell {
+  @apply rounded-sm transition-colors duration-150;
+}
+.heatmap-0 { @apply bg-coders-surface; }
+.heatmap-1 { @apply bg-green-900/60; }
+.heatmap-2 { @apply bg-green-700/70; }
+.heatmap-3 { @apply bg-green-600/80; }
+.heatmap-4 { @apply bg-green-500; }
+
+/* Resizable panels */
+.resize-handle {
+  @apply w-1 bg-coders-border hover:bg-coders-green cursor-col-resize transition-colors duration-150;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #1a1d27 25%, #2d3148 50%, #1a1d27 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

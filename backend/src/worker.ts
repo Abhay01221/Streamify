@@ -1,0 +1,12 @@
+import { validateConfiguration } from './config';
+import { redis } from './utils/redis';
+validateConfiguration();
+import { submissionQueue, startWorker } from './queue/submissionQueue';
+import { prisma } from './utils/prisma';
+startWorker();
+const heartbeat = () => redis.set('worker:heartbeat', new Date().toISOString(), 'EX', 60).catch(() => {});
+void heartbeat();
+setInterval(heartbeat, 15000).unref();
+const stop = async () => { await submissionQueue.close(); await prisma.$disconnect(); process.exit(0); };
+process.on('SIGTERM', stop);
+process.on('SIGINT', stop);

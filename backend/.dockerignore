@@ -1,0 +1,16 @@
+node_modules
+dist
+dist-seed
+.git
+.gitignore
+*.log
+logs/
+coverage/
+.nyc_output/
+.env
+.env.*
+!.env.example
+*.md
+.eslintrc*
+.prettierrc*
+jest.config*

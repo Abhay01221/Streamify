@@ -1,0 +1,771 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// USER MODELS
+// ============================================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  username          String    @unique
+  passwordHash      String?
+  emailVerified     Boolean   @default(false)
+  emailVerifyToken  String?
+  isPremium         Boolean   @default(false)
+  premiumExpiresAt  DateTime?
+  isAdmin           Boolean   @default(false)
+  isBanned          Boolean   @default(false)
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?
+  githubId          String?   @unique
+  googleId          String?   @unique
+  stripeCustomerId  String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  profile           UserProfile?
+  stats             UserStats?
+  streak            UserStreak?
+  badges            UserBadge[]
+  submissions       Submission[]
+  contestParticipations ContestParticipant[]
+  contestSubmissions    ContestSubmission[]
+  studyPlanProgress     UserStudyPlanProgress[]
+  notifications         Notification[]
+  notificationSettings  UserNotificationSettings?
+  notes                 Note[]
+  solutions             Solution[]
+  discussions           Discussion[]
+  discussionComments    DiscussionComment[]
+  discussionVotes       DiscussionVote[]
+  sessions              UserSession[]
+  refreshTokens         RefreshToken[]
+  bookmarks             Bookmark[]
+  lessonProgress        UserLessonProgress[]
+
+  @@index([email])
+  @@index([username])
+}
+
+model UserProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  displayName String?
+  bio         String?
+  location    String?
+  website     String?
+  githubUrl   String?
+  linkedinUrl String?
+  twitterUrl  String?
+  avatarUrl   String?
+  country     String?
+  school      String?
+  company     String?
+  jobTitle    String?
+  isPublic    Boolean @default(true)
+  showOnline  Boolean @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserStats {
+  id              String @id @default(cuid())
+  userId          String @unique
+  totalSolved     Int    @default(0)
+  easySolved      Int    @default(0)
+  mediumSolved    Int    @default(0)
+  hardSolved      Int    @default(0)
+  totalSubmissions Int   @default(0)
+  acceptedSubmissions Int @default(0)
+  acceptanceRate  Float  @default(0)
+  reputation      Int    @default(0)
+  contestRating   Float  @default(1500)
+  contestsAttended Int   @default(0)
+  globalRank      Int?
+  countryRank     Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserStreak {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastSolvedAt  DateTime?
+  totalActiveDays Int    @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserBadge {
+  id         String   @id @default(cuid())
+  userId     String
+  badgeType  String
+  badgeName  String
+  badgeIcon  String
+  earnedAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeType])
+  @@index([userId])
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       String
+  deviceInfo   String?
+  ipAddress    String?
+  userAgent    String?
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  isActive     Boolean  @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isRevoked Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+// ============================================================
+// PROBLEM MODELS
+// ============================================================
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Problem {
+  id              String     @id @default(cuid())
+  slug            String     @unique
+  title           String
+  number          Int        @unique
+  difficulty      Difficulty
+  description     String     @db.Text
+  isPremium       Boolean    @default(false)
+  isActive        Boolean    @default(true)
+  acceptanceRate  Float      @default(0)
+  totalSubmissions Int       @default(0)
+  totalAccepted   Int        @default(0)
+  timeLimit       Int        @default(2000)  // ms
+  memoryLimit     Int        @default(262144) // KB
+  referenceSolution String? @db.Text
+  sourceName      String     @default("CodeForge")
+  sourceUrl       String?
+  sourceProblemId String?
+  license         String?
+  attribution     String?
+  hints           String[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  tags            ProblemTag[]
+  examples        ProblemExample[]
+  constraints     ProblemConstraint[]
+  testCases       TestCase[]
+  editorial       EditorialSection[]
+  submissions     Submission[]
+  solutions       Solution[]
+  discussions     Discussion[]
+  notes           Note[]
+  contestProblems ContestProblem[]
+  studyPlanProblems StudyPlanProblem[]
+  companies       CompanyProblem[]
+  starterCode     StarterCode[]
+  bookmarks       Bookmark[]
+  lessonProblems  CourseLessonProblem[]
+
+  @@index([slug])
+  @@index([difficulty])
+  @@index([number])
+  @@unique([sourceName, sourceProblemId])
+}
+
+model ProblemTag {
+  id        String @id @default(cuid())
+  problemId String
+  tagId     String
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, tagId])
+  @@index([problemId])
+  @@index([tagId])
+}
+
+model Tag {
+  id          String @id @default(cuid())
+  name        String @unique
+  slug        String @unique
+  description String?
+  color       String?
+  problemCount Int   @default(0)
+
+  problems ProblemTag[]
+}
+
+model ProblemExample {
+  id          String @id @default(cuid())
+  problemId   String
+  inputText   String @db.Text
+  outputText  String @db.Text
+  explanation String? @db.Text
+  order       Int    @default(0)
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+}
+
+model ProblemConstraint {
+  id        String @id @default(cuid())
+  problemId String
+  text      String
+  order     Int    @default(0)
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+}
+
+model TestCase {
+  id         String  @id @default(cuid())
+  problemId  String
+  input      String  @db.Text
+  output     String  @db.Text
+  isSample   Boolean @default(false)
+  order      Int     @default(0)
+  explanation String? @db.Text
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  submissionResults SubmissionTestResult[]
+
+  @@index([problemId])
+}
+
+model StarterCode {
+  id         String @id @default(cuid())
+  problemId  String
+  language   String
+  code       String @db.Text
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, language])
+  @@index([problemId])
+}
+
+model EditorialSection {
+  id        String @id @default(cuid())
+  problemId String
+  title     String
+  content   String @db.Text
+  approach  String?
+  timeComplexity  String?
+  spaceComplexity String?
+  order     Int    @default(0)
+  isPremium Boolean @default(true)
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId])
+}
+
+// ============================================================
+// SUBMISSION MODELS
+// ============================================================
+
+enum SubmissionStatus {
+  PENDING
+  RUNNING
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT_EXCEEDED
+  MEMORY_LIMIT_EXCEEDED
+  RUNTIME_ERROR
+  COMPILE_ERROR
+  SYSTEM_ERROR
+  OUTPUT_LIMIT_EXCEEDED
+}
+
+model Submission {
+  id          String           @id @default(cuid())
+  userId      String
+  problemId   String
+  language    String
+  code        String           @db.Text
+  status      SubmissionStatus @default(PENDING)
+  runtime     Int?             // ms
+  memory      Int?             // KB
+  runtimePercentile Float?
+  memoryPercentile  Float?
+  errorMessage String?         @db.Text
+  isRun       Boolean          @default(false)
+  runOutput   String?          @db.Text
+  runError    String?          @db.Text
+  customInput String?          @db.Text
+  queueStatus String           @default("Pending")
+  verdict     String?
+  startedAt   DateTime?
+  completedAt DateTime?
+  isContest   Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem     Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  testResults SubmissionTestResult[]
+
+  @@index([userId])
+  @@index([problemId])
+  @@index([userId, problemId])
+  @@index([createdAt])
+  @@index([queueStatus, createdAt])
+}
+
+model SubmissionTestResult {
+  id           String @id @default(cuid())
+  submissionId String
+  testCaseId   String
+  passed       Boolean
+  actualOutput String? @db.Text
+  expectedOutput String? @db.Text
+  runtime      Int?
+  memory       Int?
+  errorMessage String? @db.Text
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  testCase   TestCase   @relation(fields: [testCaseId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+}
+
+// ============================================================
+// DISCUSSION MODELS
+// ============================================================
+
+model Discussion {
+  id        String   @id @default(cuid())
+  userId    String
+  problemId String?
+  title     String
+  content   String   @db.Text
+  views     Int      @default(0)
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem  Problem? @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  comments DiscussionComment[]
+  votes    DiscussionVote[]
+
+  @@index([userId])
+  @@index([problemId])
+}
+
+model DiscussionComment {
+  id           String   @id @default(cuid())
+  discussionId String
+  userId       String
+  content      String   @db.Text
+  parentId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  discussion Discussion        @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent     DiscussionComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies    DiscussionComment[] @relation("CommentReplies")
+  votes      DiscussionVote[]
+
+  @@index([discussionId])
+  @@index([userId])
+}
+
+model DiscussionVote {
+  id           String  @id @default(cuid())
+  userId       String
+  discussionId String?
+  commentId    String?
+  value        Int     // 1 or -1
+
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussion Discussion?        @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  comment    DiscussionComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, discussionId])
+  @@unique([userId, commentId])
+  @@index([discussionId])
+  @@index([commentId])
+}
+
+// ============================================================
+// CONTEST MODELS
+// ============================================================
+
+enum ContestStatus {
+  UPCOMING
+  ACTIVE
+  ENDED
+}
+
+model Contest {
+  id          String        @id @default(cuid())
+  slug        String        @unique
+  title       String
+  description String?       @db.Text
+  status      ContestStatus @default(UPCOMING)
+  startTime   DateTime
+  endTime     DateTime
+  duration    Int           // minutes
+  isVirtual   Boolean       @default(false)
+  ratingChange Boolean      @default(true)
+  createdAt   DateTime      @default(now())
+
+  problems      ContestProblem[]
+  participants  ContestParticipant[]
+  submissions   ContestSubmission[]
+
+  @@index([status])
+  @@index([startTime])
+}
+
+model ContestProblem {
+  id        String @id @default(cuid())
+  contestId String
+  problemId String
+  points    Int    @default(100)
+  order     Int    @default(0)
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, problemId])
+  @@index([contestId])
+}
+
+model ContestParticipant {
+  id           String   @id @default(cuid())
+  contestId    String
+  userId       String
+  rank         Int?
+  score        Int      @default(0)
+  penalty      Int      @default(0)
+  ratingBefore Float?
+  ratingAfter  Float?
+  ratingChange Float?
+  registeredAt DateTime @default(now())
+  isVirtual    Boolean  @default(false)
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([contestId, userId])
+  @@index([contestId])
+  @@index([userId])
+}
+
+model ContestSubmission {
+  id        String           @id @default(cuid())
+  contestId String
+  userId    String
+  problemId String
+  language  String
+  code      String           @db.Text
+  status    SubmissionStatus @default(PENDING)
+  runtime   Int?
+  memory    Int?
+  points    Int              @default(0)
+  createdAt DateTime         @default(now())
+
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([contestId])
+  @@index([userId])
+}
+
+// ============================================================
+// STUDY PLAN MODELS
+// ============================================================
+
+model StudyPlan {
+  id          String @id @default(cuid())
+  slug        String @unique
+  title       String
+  description String? @db.Text
+  difficulty  String
+  estimatedDays Int
+  isPremium   Boolean @default(false)
+  coverImage  String?
+  order       Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  isPublished Boolean @default(true)
+
+  problems  StudyPlanProblem[]
+  progress  UserStudyPlanProgress[]
+  modules   CourseModule[]
+}
+
+model CourseModule {
+  id          String @id @default(cuid())
+  studyPlanId String
+  slug        String
+  title       String
+  description String @default("") @db.Text
+  order       Int @default(0)
+
+  studyPlan StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  lessons   CourseLesson[]
+
+  @@unique([studyPlanId, slug])
+  @@index([studyPlanId, order])
+}
+
+model CourseLesson {
+  id               String @id @default(cuid())
+  moduleId         String
+  slug             String
+  title            String
+  summary          String @default("")
+  content          String @db.Text
+  estimatedMinutes Int @default(20)
+  order            Int @default(0)
+  resources        Json @default("[]")
+
+  module   CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  problems CourseLessonProblem[]
+  progress UserLessonProgress[]
+
+  @@unique([moduleId, slug])
+  @@index([moduleId, order])
+}
+
+model CourseLessonProblem {
+  id        String @id @default(cuid())
+  lessonId  String
+  problemId String
+  order     Int @default(0)
+
+  lesson  CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, problemId])
+  @@index([problemId])
+}
+
+model UserLessonProgress {
+  id          String @id @default(cuid())
+  userId      String
+  lessonId    String
+  completedAt DateTime @default(now())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
+}
+
+model StudyPlanProblem {
+  id          String @id @default(cuid())
+  studyPlanId String
+  problemId   String
+  day         Int
+  order       Int    @default(0)
+  topic       String?
+
+  studyPlan StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+  problem   Problem   @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([studyPlanId, problemId])
+  @@index([studyPlanId])
+}
+
+model UserStudyPlanProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  studyPlanId String
+  completedProblems Int @default(0)
+  totalProblems     Int @default(0)
+  enrolledAt  DateTime @default(now())
+  completedAt DateTime?
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studyPlan StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, studyPlanId])
+  @@index([userId])
+}
+
+// ============================================================
+// NOTIFICATION MODELS
+// ============================================================
+
+enum NotificationType {
+  SUBMISSION_RESULT
+  CONTEST_STARTING
+  DISCUSSION_REPLY
+  BADGE_EARNED
+  DAILY_CHALLENGE
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isRead])
+}
+
+model UserNotificationSettings {
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  submissionResult      Boolean @default(true)
+  contestStarting       Boolean @default(true)
+  discussionReply       Boolean @default(true)
+  badgeEarned           Boolean @default(true)
+  dailyChallenge        Boolean @default(true)
+  emailDigest           Boolean @default(false)
+  emailDigestFrequency  String  @default("weekly")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// NOTE MODEL
+// ============================================================
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  problemId String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId])
+  @@index([userId])
+}
+
+// ============================================================
+// SOLUTION MODEL
+// ============================================================
+
+model Solution {
+  id        String   @id @default(cuid())
+  userId    String
+  problemId String
+  title     String
+  content   String   @db.Text
+  language  String
+  code      String   @db.Text
+  upvotes   Int      @default(0)
+  downvotes Int      @default(0)
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([problemId])
+}
+
+// ============================================================
+// COMPANY MODELS
+// ============================================================
+
+model Company {
+  id          String @id @default(cuid())
+  name        String @unique
+  slug        String @unique
+  logo        String?
+  description String? @db.Text
+  website     String?
+
+  problems CompanyProblem[]
+}
+
+model CompanyProblem {
+  id        String @id @default(cuid())
+  companyId String
+  problemId String
+  frequency Int    @default(1)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, problemId])
+  @@index([companyId])
+  @@index([problemId])
+}
+
+// ============================================================
+// DAILY CHALLENGE
+// ============================================================
+
+model DailyChallenge {
+  id        String   @id @default(cuid())
+  problemId String
+  date      DateTime @unique @db.Date
+  createdAt DateTime @default(now())
+}
+
+model Bookmark {
+  id String @id @default(cuid())
+  userId String
+  problemId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  @@unique([userId, problemId])
+}
+
+model AuditEvent {
+  id String @id @default(cuid())
+  actorId String
+  action String
+  targetId String
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
